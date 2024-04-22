@@ -1,5 +1,6 @@
-#La structure de mes codes se décompose en 2 parties, une première partie ou je définis l'ensemble des 
-#fonctions qui vont me servir, et une deuxième partie où j'applique ces fonctions 
+#The structure of the file python are divided in two parts. In the first part I defined the auxiliar function
+#I will be using to treat the topic. In the second part I apply these function with detailed explanation on the choices
+#I've made.
 
 import pandas as pd
 from Data_import_local import local_pandas
@@ -7,8 +8,8 @@ from Data_import_local import local_pandas
 #Partie 1
 
 def analyse_colonnes(dataframe, new_colonnes, index_name) :
-    colonnes = dataframe.columns             #Je stocke les colonnes pour un éventuel usage futur
-    print('Les colonnes du dataframe emissions_df sont :')     #On affiche les colonnes avec une boucle pour davantage de lisibilité
+    colonnes = dataframe.columns            
+    print('Les colonnes du dataframe emissions_df sont :')     
     for c in colonnes :
         print(c)
     print(' ')
@@ -18,21 +19,24 @@ def analyse_colonnes(dataframe, new_colonnes, index_name) :
 
 #Partie 2
 
-"""La fonction gestion_NaN va permettre de traiter les valeurs manquantes du dataframe passé en paramètre.
-On spécifie également quelles colonnes vont être traitées avec la méthode interpolate dans une liste colonnes_interpolate
-et les colonnes qu'on va traiter avec la moyenne dans une liste colonnes_mean, on renvoie ensuite le dataframe actualisé"""
+"""Paremeters : (dataframe : pandas.Dataframe, colonnes_interpolate : list, colonnes_mean : list
+    But : Return a dataframe with added columns with no missing values to the dataframe. The missing values in these added columns will be treated
+    differently depending on the list the columns is parted of : interpolate for the columns in colonnes_interpolate
+    mean if this is the other one.)
+"""
 
 def gestion_NaN(dataframe,colonnes_interpolate, colonnes_mean) :
     for c in colonnes_interpolate :
-        dataframe[f'{c}_filled'] = dataframe[f'{c}'].copy()     #Il faut commencer par ajouter au dataframe une deep copy de chaque colonne à corriger
-        dataframe[f'{c}_filled'] = dataframe[f'{c}_filled'].interpolate('linear')   #On modifie ensuite la nouvelle colonne crée
+        dataframe[f'{c}_filled'] = dataframe[f'{c}'].copy()     #A deep copy of the column to modify is first add to the dataframe
+        dataframe[f'{c}_filled'] = dataframe[f'{c}_filled'].interpolate('linear')   #Then this copy is modified with the adequate method
     for c in colonnes_mean : 
         dataframe[f'{c}_filled'] = dataframe[f'{c}'].copy()
         mean_c = dataframe[f'{c}'].mean()
         dataframe[f'{c}_filled'] = dataframe[f'{c}_filled'].fillna(mean_c)
     return dataframe
 
-"""La fonction statistiques affiche les statistiques relatives aux colonnes passées en paramètre dans la liste colonnes"""
+"""PArameters : (dataframe : pandas.Dataframe, colonnes : list
+    But : statistics print the statistics of the columns in the list colonnes, which are in the dataframe"""
 
 def statistics(dataframe, colonnes) :
     for c in colonnes :
@@ -43,8 +47,10 @@ def statistics(dataframe, colonnes) :
 
 #Partie 3 :
 
-"""La fonction ajout_data permet de merge les colonnes d'un dataframe sur un autre en se basant ur une colonne présente dans les deux 
-dataframe (on l'appelle cle_commune et ce sera le code insee)"""
+"""
+Parameters : (dataframe1 : pandas.Dataframe, dataframe2 : pandas.Dataframe, colonnes : list, cle_commune : str)
+But : Return one dataframe with all columns from colonnes merged on dataframe1 from dataframe2 based on the cle_commune  
+"""
 
 def ajout_data(dataframe1, dataframe2, colonnes, cle_commune) :
     for c in colonnes :
@@ -55,13 +61,18 @@ def ajout_data(dataframe1, dataframe2, colonnes, cle_commune) :
 if __name__ == '__main__' :
     file = 'IGT - Pouvoir de réchauffement global.csv'
 
-    #On crée notre dataframe par la méthode local présentée dans la partie Data import
+    #I use the function local presented in tthe Data_import part to create my dataframe
+    
     emissions_df = local_pandas(file, ',')
     print(emissions_df.shape)
 
     print(' ')
     print('Partie 1 :')
     print('')
+
+    #I rename each columns to have names in lowercase and I add '_' to replace each space,
+    #This is done in one step with the function analyse_colonnes.
+
     #On renomme toute les colonnes en minuscule et on ajoute des '_' pour chaque espace, 
     #je le fais en une seule étape avec la fonction analyse_colonnes:
 
@@ -69,74 +80,67 @@ if __name__ == '__main__' :
     nom = 'commune_code_insee'
     analyse_colonnes(emissions_df, new_colums, nom)
 
-    print(emissions_df.head(10))     #On vérifie ici que le dataframe est correct
+    print(emissions_df.head(10))     #We check the dataframe if the changes implemented are correct
     
     print(' ')
     print(' ')
     #Partie 2 :
     print('Partie 2 :')
 
-    #On utilise la fonction describe pour afficher les statistiques du dataframe
+    #The describe function can be use to have a look on the statistics of the dataframe
 
     print(emissions_df.describe())
 
-    #On sait qu'il manque des valeurs dans le dataframe lorsu'on affiche les 10 premières lignes du tableau. 
-    #On va donc regarder pour chaque colonne le nombre de valeurs manquantes et créer une nouvelle colonne pour chaque colonne
-    #où il existe une valeur manquante. 
+    #We know there is missing values in the dataframe because when we look the 10 first lines of the dataframe
+    #missing values can be see on the transports related columns.
 
     print((emissions_df.isna().sum()/emissions_df.shape[0])*100)
 
-    #Ici j'affiche le pourcentage de valeurs manquantes par rapport aux nombres d'entrées du dataframe
+    #Here I print the ratio of missing values for each columns 
     
-    #Les colonnes suivantes présentent des valeurs manquantes :
+    #The following columns contain missing values :
     #agriculture (0.17%); transports (72%); transports_international (92%); déchets (0.016%) ; energie (3.65%) ; 
     #industrie_hors-energie (3.65%) ; residentiel (0.016%) ; routier (0.056%) 
 
-    #On observe que ce sont surtout les colonnes relatives au trnsport qui présentent le plus de valeurs manquantes
-    #Ma première idée était de remplacer ces valeurs manquantes par la moyenne de la colonne cepednant au vu du nombre 
-    #de valeurs manquante on ne peut pas considérer la moyenne comme étant un bon moyen de remplacer ces valeurs 
-    #puisque elle sera calculer qu'à partir d'un nombre insuffisant de données pour les colonnes transports
-    #(18% des données pour la colonne transports et 8% pour la colonne transports_international). 
-    #J'ai donc du chercher sur internet s'il existait des fonctions permettant d'approximer les valeurs d'une colonne.
-    #La fonction interpolate() de pandas permet exactement cela. On va donc faire une interpolation polynomiale 
-    #des valeurs manquantes des colonnes relatives au transports. 
-    #Au vu du faible nombre de données manquantes pour les autres colonnes, on peut les remplacer par la 
-    #moyenne de la colonne concernée car cette dernière est calculée à partir d'un nombre suffisant de valeurs.
+    #It is mostly the transports columns that have the most missing values. Since there is a large amount of missing
+    # (92% and 72%) for these two columns, my first idea is to interpolate these missing values. For the others columns
+    #since there is less missing values, it is possible to replace the missing values with the mean of the columns,
+    #since it is calculated with a sufficient number of values, when it is impossible for the transports related columns
+    #since the mean is not correct because there is not enough values. By looking online I found on the pandas
+    #documentation the funtion interpolate() that can interpolate values. First I wanted to do a polynomial interpolation
+    #but this created errors due to the nature of the index and the values in the dataframe. therefore I did a linear 
+    #interpolation 
 
-    #Je rajoute le suffixe '_filled' aux colonnes complétées ajoutées au dataframe à l'aide de la fonction gestion_NaN:
+    #I add the suffix '_filled' to the completed columns added to the dataframe thanks to the function gestion_NaN:
 
-    col_interpolate = ['transports', 'transports_international']    #Les colonnes où les valeurs manquantes vont être interpolées
-    col_mean = ['agriculture', 'dechets', 'energie', 'industrie_hors-energie', 'residentiel', 'routier']    #Les colonnes où les valeurs manquantes vont être remplacées par la moyenne de la colonne
-    
+    col_interpolate = ['transports', 'transports_international']    #The columns where missing values will be interpolated
+    col_mean = ['agriculture', 'dechets', 'energie', 'industrie_hors-energie', 'residentiel', 'routier']    #Columns where missing values will be replaced by the mean    
     emissions_df = gestion_NaN(emissions_df,col_interpolate,col_mean)
-    print(emissions_df.isna().sum())    #On vérifie si toutes les valeurs manquantes ont été corrigées
+    print(emissions_df.isna().sum())    #We check that the missing values have been replaced
 
-    #Une remarque en relisant mon travail : au vu du grands nombres de valeurs manquantes dans les colonnes relatives au transports j'ai choisi
-    #d'interpoler toutes les valeurs, ce qui n'était peut être pas correct pour la totalité des communes. En effet
-    #si on s'interesse au sens de la colonne transports_international cela se refère certainement à tout les longs
-    #trajets de marchandises, que ce soit par train/camion ou avion, ou aussi les voyages à l'étranger. Hors toutes
-    #les villes de France ne sont pas nécessairement concernées par ce genre d'activité et il aurait donc peut être été 
-    #préférable de combler les valeurs manquantes par un zéro car, si à priori il n'y a pas de données c'est peut être car il n'y en existe pas.
-    #Cependant par manque de temps la correction n'a pas pu être implémentée.
+    #A remark about the work, since there is a large number of missing values in the columns linked to the transports branch
+    #I chose to interpolate these missing values. When I check my code I believe this was not the correct choice for
+    #all the town. Indeed the meaning of the international_transports columns is linked to way of transports like 
+    #plane, train, boat ect... However not all cities are concerned by such way of transports since not every city 
+    #have an aeroport for example. So if there is no data about international transports for one city it is maybe because
+    #there is not any. Therefore I should have replaced the missing values with a zero. 
 
-    #Je remarque ici que la fonction interpolate n'a pas fonctionné pour toutes les valeurs. Après avoir demandé à
-    #ChatGPT la raison, il est possible que ce soit causé par le grand nombre de valeurs manquantes des colonnes relatives au transports
-    #Pour corriger cela je vais remplacer ces valeurs par la nouvelle moyenne corrigée, car cela se produit pour un nombre
-    #négligeable de valeurs (2 et 14 sur 35 798). Et comme cela se produit que pour 2 colonnes 
-    #je le corrige directement ici sans passer par une fonction auxiliaire.
+    #I find here that the interpolate function did not work for all missing values. To find why, I asked chatGPT 
+    #and the reason can be the large amount of missing values in the transports related columns. Therefore, since 
+    #there is not much msisng values (2 and 14 over 35 798 values) I will replace these missing values with the mean
+    #of the columns. I implement the correction directly here without an auxiliar function since it happens for only
+    #2 columns.
 
     emissions_df['transports_filled'] = emissions_df['transports_filled'].fillna(emissions_df['transports_filled'].mean())
     emissions_df['transports_international_filled'] = emissions_df['transports_international_filled'].fillna(emissions_df['transports_international_filled'].mean())
 
     
-    #On peut ensuite affficher les statistiques relatives à chaque colonne :
+    #Then we can print the statistics related to each columns :
     colonnes_décrites = ['agriculture_filled', 'transports_filled', 'transports_international_filled', 'biomasse_hors-total_co2', 'dechets_filled', 'energie_filled', 'industrie_hors-energie_filled', 'residentiel_filled', 'routier_filled', 'tertiaire']
     statistics(emissions_df,colonnes_décrites)
 
-    #Je passe par une fonction auxiliaire, car on a un grand nombre de colonne ce qui nous empêche de visualiser la 
-    #totalité des stistiques dans la console de python, donc j'ai choisi d'afficher à la suite les statistiques de chaque
-    #colonne les unes après les autres pour plus de lisibilité. On n'inclue pas la colonne 'commune' car elle ne 
-    #présente pas de valeurs numériques.
+    #Since there is many columns I use an auxiliar function to print each statistics with a loop to have a better lisibility
+    #The column 'commune' is not included since it does not contain numeric values.
 
     print(' ')
     print(' ')
@@ -144,27 +148,24 @@ if __name__ == '__main__' :
     print(' ')
 
     communes_df = local_pandas('donnees_communes.csv', ';')
-    print(communes_df.shape)    #34970 lignes
-    print(emissions_df.shape)   #35798 lignes
+    print(communes_df.shape)    #34970 lines
+    print(emissions_df.shape)   #35798 lines
 
-    #En voulant vérifier que les dataframes avaient le même nombre d'entrées je me rends compte que la base de données communes
-    #contient moins de valeurs que la base de données relatives aux emissions. Cela pose problème dans la création de notre
-    #nouveau dataframe car si l'on veut toutes les données d'émission il faudrait faire un merge OUTER ce qui entraînerait 
-    #la création de valeurs manquantes. Cela impliquerait donc de devoir rajouter toutes les communes absentes de la base
-    #de données communes (région, code insee, departement, nom de la commune) mais présente dans la base de données emissions_df.
-    #Ici j'ai fait le choix de ne rien rajouter aux bases de données et de faire un merge INNER, c'est à dire de
-    #ne garder les communes présentes dans la base de données communes.Il faut donc garder en tête pour l'analyse des données
-    #que on a retirer des valeurs.
-    
+    #I first checked if the 2 dataframes have the same amount of data. This is not the case, communes_df have less values
+    #than emissions_df, so when I will merge the 2 dataframe together it will cause the loss of some data. Even the use of 
+    #the key word OUTER when merging the two dataframe will create missing values on the cities related. If I choose
+    #this method I would need to add the missing inforlations about each insee codes added to the merged dataframe.
+    #I would need to find the name of the city, its region, its department and all the code related. I don't see a way
+    #to do this automaticly so I chose the key word INNER when merging the two dataframe knowing that I lose data doing so. 
 
     emissions_communes_df = communes_df.copy() 
 
+    #I chose to create the emissions_communes_df by deep copying the communes_df, since they have many columns in common
+    #Then I drop the useless columns from emissions_communes_df, and I rename the remaining ones according to the 
+    #guide. I also need to change the index, initially it is the region's code and I need it to be the insee code (with the same name as in emissions_df) to
+    #make the merge.   
 
-    #Comme la plupart des infos souhaitées dans le dataframe emissions_communes_df se trouvent dans le dataframe 
-    #communes_df j'ai choisi de faire une deep copy du dataframe communes_df et de ne faire que les merges à partir
-    #de emissions_df. On commence par retirer les colonnes inutiles et on renomme les colonnes comme demandé.
-    #On change également l'index, initialement le code de la région, on utilise plutôt le code INSEE comme dans le dataframe
-    #emissions_df, et on lui donne le même nom (commune_code_insee) pour réaliser le merge.
+
     emissions_communes_df = emissions_communes_df.reset_index()
     emissions_communes_df = emissions_communes_df.set_index('COM')
     emissions_communes_df.index.names = ['commune_code_insee']
@@ -174,19 +175,19 @@ if __name__ == '__main__' :
     print(emissions_communes_df.head())
     print(emissions_df.head())
     
-    #Maintenant on ajoute les informations du dataframe emissions_df
+    #Now I add the data from emissions_df 
 
     colums_to_merge = ['agriculture_filled', 'transports_filled', 'transports_international_filled', 'biomasse_hors-total_co2','dechets_filled', 'energie_filled', 'industrie_hors-energie_filled', 'residentiel_filled', 'routier_filled', 'tertiaire']
     emissions_communes_df = ajout_data(emissions_communes_df, emissions_df, colums_to_merge, 'commune_code_insee')
     print(emissions_communes_df.head())
-    print(emissions_communes_df.shape)  #34857 lignes.
+    print(emissions_communes_df.shape)  #34857 lines.
 
-    #La base de données communes_df avait 34970 lignes, on a donc encore perdu d'autres données lors du merge. C'est dû 
-    #au fait que des codes insee doivent être présent dans un dataframe mais pas dans l'autre. On aurait pu rajouter toutes les 
-    #colonnes avec le merge OUTER mais cela aurait demandé un second traitement des valeurs manquantes. 
-    # J'ai préféré garder ce dataframe tel quel afin de traiter la partie 3 en priorité. 
+    #The database have 34970 lines, so we lost data again with the merge. It is due to the use of the key word INNER
+    #that merges data when both insee code are present in both dataframe. Since both dataframe don't have all insee code
+    #in common, the individual insee code are lost during the merging step. Adding missing values on emissions linked to 
+    #cities present only in communes_df could have been possible with a second treatment of missing values but I chose 
+    #to focus on 3rd part first.
     
-    emissions_communes_df.to_csv('C:/Users/arthu/Documents/Centrale/important/stage 2A/entretien/Scor/Test/emissions_communes_pandas.csv', index = True)
+    #emissions_communes_df.to_csv('C:/Users/arthu/Documents/Centrale/important/stage 2A/entretien/Scor/Test/emissions_communes_pandas.csv', index = True)
 
-    #Enfin on enregistre notre dataframe dans un csv pour pouvoir l'utiliser dans la partie 3. 
-    #Je masque cette ligne lors de l'envoi du projet pour ne pas créer d'erreurs. 
+    #Finally I save the dataframe in a .csv file to reopen it easily in 3rd part.

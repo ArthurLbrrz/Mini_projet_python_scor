@@ -1,14 +1,15 @@
-#La structure de mes codes se décompose en 2 parties, une première partie ou je définis l'ensemble des 
-#fonctions qui vont me servir, et une deuxième partie où j'applique ces fonctions 
+#The structure of the file python are divided in two parts. In the first part I defined the auxiliar function
+#I will be using to treat the topic. In the second part I apply these function with detailed explanation on the choices
+#I've made.
 
 import polars as pl
 from Data_import_local import local_polars
 
-#Source de documentation : https://docs.pola.rs/
+#Online documentation : https://docs.pola.rs/
 
-#Partie 1 :
+#Part 1 :
 
-#La fonction rename est commune à pandas et polars, la syntaxe est la même selon la documentation de polars.
+#The rename function have the same syntaxe between pandas and polars.
 
 def analyse_colonnes(dataframe) :
     colonnes = dataframe.columns
@@ -21,13 +22,15 @@ def renaming(dataframe, new_noms) :
 
 #Partie 2
 
-"""La fonction gestion_NaN va permettre de traiter les valeurs manquantes du dataframe passé en paramètre.
-On spécifie également quelles colonnes vont être traitées avec la méthode interpolate dans une liste colonnes_interpolate
-et les colonnes qu'on va traiter avec la moyenne dans une liste colonnes_mean, on renvoie ensuite le dataframe actualisé"""
-#La fonction with_columns, trouvée sur internet sur le forum StackOverflow, permet de modifier les colonnes, le reste de 
-#la syntaxe a été trouvé sur le même forum en adaptant un exemple illustratif. Les fonctions interpolate et fill_null 
-#ont été trouvées en ligne via la documentation de polars. J'ai aussi utilisé chatGPT croisé avec le forum StackOverflow
-#Pour comprendre et corriger mes erreurs.
+"""Paremeters : (dataframe : pandas.Dataframe, colonnes_interpolate : list, colonnes_mean : list
+    But : Return a dataframe with added columns with no missing values to the dataframe. The missing values in these added columns will be treated
+    differently depending on the list the columns is parted of : interpolate for the columns in colonnes_interpolate
+    mean if this is the other one.)
+"""
+#The function 'with_columns' found on the StackOverflow forum, can modify or create column based on a given expression.
+#The syntaxe has been found on the same forum with a detailed example. The function interpolate and fill_null have been 
+#found with the online documentation of polars. I used chatGPT and StackOverflow to understand and correct my syntaxe's mistakes.
+
 
 def gestion_NaN(dataframe, col_interpolate, col_mean) :
     for c in col_interpolate :
@@ -37,8 +40,8 @@ def gestion_NaN(dataframe, col_interpolate, col_mean) :
         dataframe = dataframe.with_columns(pl.col(c).fill_null(mean).alias(f'{c}_filled'))
     return dataframe
 
-"""La fonction statistiques affiche les statistiques relatives aux colonnes passées en paramètre dans la liste colonnes"""
-
+"""PArameters : (dataframe : pandas.Dataframe, colonnes : list
+    But : statistics print the statistics of the columns in the list colonnes, which are in the dataframe"""
 
 def statistics(dataframe, colonnes) :
     for c in colonnes :
@@ -49,8 +52,10 @@ def statistics(dataframe, colonnes) :
 
 #Partie 3 :
 
-"""La fonction ajout_data permet de merge les colonnes d'un dataframe sur un autre en se basant ur une colonne présente dans les deux 
-dataframe (on l'appelle cle_commune et ce sera le code insee)"""
+"""
+Parameters : (dataframe1 : pandas.Dataframe, dataframe2 : pandas.Dataframe, colonnes : list, cle_commune : str)
+But : Return one dataframe with all columns from colonnes merged on dataframe1 from dataframe2 based on the cle_commune  
+"""
 
 #Pour polars la fonction merge de pandas est nommée join mais la syntaxe reste la même au vu de la documentation de polars
 
@@ -82,18 +87,17 @@ if __name__ == '__main__' :
     print('')
     print('Partie 2 :')
     print('')
-    #Pour la gestion des valeurs manquantes je vais procéder de la même façon que dans la partie pandas
+    
+    #For the missing values part I proceed just like the pandas part.
     
     colonnes_interpolate = ['transports', 'transports_international']
     colonnes_mean = ['agriculture', 'dechets', 'energie', 'industrie_hors-energie', 'residentiel', 'routier']
     emissions_df = gestion_NaN(emissions_df,colonnes_interpolate,colonnes_mean)
     columns_describe = ['agriculture_filled','transports_filled', 'transports_international_filled', 'biomasse_hors-total_co2', 'dechets_filled', 'energie_filled', 'industrie_hors-energie_filled', 'residentiel_filled', 'routier_filled', 'tertiaire']
     
-
-    #A nouveau on voit, à partir des statistiques qui affichent le nombre de valeurs manquantes que la fonction 
-    #interpolate() n'a pas pu remplacer toutes les valeurs manquantes. Il en manque 7
-    #dans transports et 24 dans transports_international. A nouveau je vais simplement les remplacer par la nouvelle valeur moyenne
-
+    #Again the interpolate function forget about 7 and 24 values in the transports related columns. So again I replace 
+    #these values directly here without an auxiliar function.
+    
     emissions_df = emissions_df.with_columns(pl.col("transports_filled").fill_null(emissions_df.select(pl.col('transports_filled')).mean()))
     emissions_df = emissions_df.with_columns(pl.col("transports_international_filled").fill_null(emissions_df.select(pl.col('transports_international_filled')).mean()))
 
@@ -112,8 +116,8 @@ if __name__ == '__main__' :
     print(f'La taille du dataframe communes est de : {communes_df.shape}')  #34 970 lignes
     print(f'La taille du dataframe emissions est de : {emissions_df.shape}')    #35 798 lignes
 
-    #Comme avec la version pandas on a le même problème de taille des dataframe. Ici aussi j'ai donc fait le choix de 
-    #faire un merge INNER, ce qui implique donc l'abandon de certaines données
+    #Just like with the pandas Dataframe, there is the same problem of shape between the two dataframe. I treated 
+    #the problem the same way I did with pandas i.e with a INNER merge.
     
 
     colums_to_merge = ['region_code', 'region_name', 'departement_code', 'commune_code_insee', 'commune', 
@@ -135,8 +139,8 @@ if __name__ == '__main__' :
 
     print(emissions_communes_df.shape)  #34857 lignes
 
-    #En effet on a bien perdu des données mais il n'y a pas de différence avec pandas ici.
+    #Again values are missing but there is no differences with the pandas dataframe (on the shape aspect)
 
     #emissions_communes_df.write_csv('C:/Users/arthu/Documents/Centrale/important/stage 2A/entretien/Scor/Test/emissions_communes_polars.csv')
-    #Enfin on enregistre notre dataframe dans un csv pour pouvoir l'utiliser dans la partie 3. 
-    #Je masque cette ligne lors de l'envoi du projet pour ne pas créer d'erreurs. 
+    
+    #Finally I save the dataframe in a .csv file to reopen it easily in 3rd part.

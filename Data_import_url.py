@@ -1,30 +1,31 @@
-#La structure de mes codes se décompose en 2 parties, une première partie ou je définis l'ensemble des 
-#fonctions qui vont me servir, et une deuxième partie où j'applique ces fonctions 
+#The structure of the file python are divided in two parts. In the first part I defined the auxiliar function
+#I will be using to treat the topic. In the second part I apply these function with detailed explanation on the choices
+#I've made.
 
-#Partie 2 : Importing data by using an URL, Importer des données en utilisant une URL
+#Partie 2 : Importing data by using an URL
 
-#On commence par importer le module utile
+#First I import the needed modules
 import pandas as pd
 import polars as pl 
 
 def url_pandas(lien,separateur) :
     emissions_df =  pd.read_csv(lien, sep = separateur, index_col=0)
-    #La fonction read_csv de pandas est aussi capable de prendre des urls
+    #The function read_csv from pandas is also capable of reading URLs
     return emissions_df
 
 def url_polars(lien,separateur,types) :
     emissions_df = pl.read_csv(lien, separator= separateur, dtypes= types)  
-    #De la même manière que dans la version où on stocke localement le fichier on précise le type de la colonne INSEE commune
+    #Just like pandas, polars.read_csv can also read URLs. It is still needed to specify the dtypes wished for ambiguous columns.
     return emissions_df 
 
 
 if __name__ == "__main__" :
     emissions_df = url_pandas('https://koumoul.com/s/data-fair/api/v1/datasets/igt-pouvoir-de-rechauffement-global/convert', ',')
     print(emissions_df.head(20))
-    print(emissions_df.shape)  #On compare les tailles des deux dataframes obtenus avec polars et pandas pour comparer
+    print(emissions_df.shape)  #I check that both methods are equivalent
 
     emissions_df2 = url_polars('https://koumoul.com/s/data-fair/api/v1/datasets/igt-pouvoir-de-rechauffement-global/convert', ',', {'INSEE commune' : pl.Utf8})
     print(emissions_df2.head(20))
     print(emissions_df2.shape)
 
-    #On obtient bien les mêmes dimensions pour les deux tableaux à savoir (35798,12), et cela coïncide avec l'autre méthode de création de dataframe.
+    #The two method are equivalent and moreover this is the same results as in the first method when the file was stored locally.
